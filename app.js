@@ -1,5 +1,3 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
 const CONFIG = {
   // Create a free project at https://supabase.com and paste its Project URL + anon/publishable key here.
   // Never put a Supabase service_role key in frontend code.
@@ -7,7 +5,7 @@ const CONFIG = {
   supabaseAnonKey: 'sb_publishable_DA6frCMN6ciUAusBJk4BkA_NnENBYG3'
 };
 const CLOUD_READY = /^https:\/\/.+/.test(CONFIG.supabaseUrl) && CONFIG.supabaseAnonKey.length > 20;
-const supabase = CLOUD_READY ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey) : null;
+let supabase = null;
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const today = new Date();
@@ -96,7 +94,7 @@ async function upsertNote(note) {
 }
 async function removeCloudRow(table,id) { const {error}=await supabase.from(table).delete().eq('id',id); if(error) throw error; }
 function openAuth() {
-  if(!CLOUD_READY) { showToast('Cloud sync needs a Supabase project. See README.md in your VS Code folder.'); return; }
+  if(!CLOUD_READY || !supabase) { showToast('Cloud sync is unavailable right now. Your data can still be saved in this browser.'); return; }
   if(user) { supabase.auth.signOut().then(()=>{user=null;setStatus('Signed out',false);$('#accountButton').textContent='Sign in / Sync';showToast('Signed out');}); return; }
   $('#authMessage').textContent=''; $('#authDialog').showModal();
 }
@@ -120,6 +118,6 @@ $('#toggleAuthMode').addEventListener('click',()=>setAuthMode(authMode==='signup
 $('#authForm').addEventListener('submit',async e=>{e.preventDefault();if(!supabase)return;const email=$('#authEmail').value.trim(),password=$('#authPassword').value;$('#authMessage').textContent='Please wait…';$('#authSubmit').disabled=true;try{const result=authMode==='signup'?await supabase.auth.signUp({email,password}):await supabase.auth.signInWithPassword({email,password});if(result.error)throw result.error;if(authMode==='signup'&&!result.data.session){$('#authMessage').textContent='Account created. Check your email to confirm it, then sign in.';return;}$('#authDialog').close();await refreshAuth();showToast(authMode==='signup'?'Account created':'Signed in');}catch(err){$('#authMessage').textContent=err.message;}finally{$('#authSubmit').disabled=false;}});
 $('#exportButton').addEventListener('click',()=>{const payload={app:"Faisal' Workshop",version:1,exportedAt:new Date().toISOString(),tasks,notes,files:files.filter(f=>!f.cloud)};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='faisal-workshop-backup.json';a.click();URL.revokeObjectURL(url);showToast('Backup exported');});
 $('#importInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!Array.isArray(data.tasks)||!Array.isArray(data.notes))throw new Error('This is not a valid Workshop backup');if(supabase&&user)throw new Error('For a signed-in account, import is local-only in this version. Sign out to restore a local backup.');tasks=data.tasks;notes=data.notes;files=Array.isArray(data.files)?data.files:[];saveLocalTasks();saveLocalNotes();saveLocalFiles();selectedNoteId=null;renderAll();loadNote();showToast('Backup restored');}catch(err){showToast(err.message);}e.target.value='';});
-async function init(){setDate();await migrateLegacyLocalData();if(!CLOUD_READY){files=readLocal(LOCAL_FILES,files);renderAll();loadNote();setStatus('Local mode',false);$('#accountButton').textContent='Set up cloud sync';$('#fileNotice').textContent='Local mode saves data in this browser only. Configure Supabase to sync your tasks, notes, and files across your phone and laptop.';return;}files=readLocal(LOCAL_FILES,files);await refreshAuth();supabase.auth.onAuthStateChange(()=>{setTimeout(()=>refreshAuth(),0);});}
+async function init(){setDate();await migrateLegacyLocalData();files=readLocal(LOCAL_FILES,files);if(!CLOUD_READY){renderAll();loadNote();setStatus('Local mode',false);$('#accountButton').textContent='Set up cloud sync';$('#fileNotice').textContent='Local mode saves data in this browser only. Configure Supabase to sync your tasks, notes, and files across your phone and laptop.';return;}try{const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');supabase=createClient(CONFIG.supabaseUrl,CONFIG.supabaseAnonKey);await refreshAuth();supabase.auth.onAuthStateChange(()=>{setTimeout(()=>refreshAuth(),0);});}catch(err){console.error('Cloud setup failed:',err);renderAll();loadNote();setStatus('Local mode',false);$('#accountButton').textContent='Cloud unavailable';$('#fileNotice').textContent='Cloud sync could not load. Tasks, notes, and files will still save in this browser.';showToast('Cloud unavailable — local mode is ready');}}
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')) addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 setAuthMode('signin');init().catch(err=>{console.error(err);showToast('App loaded with limited offline mode');});
