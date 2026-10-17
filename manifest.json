@@ -1,0 +1,13 @@
+{
+  "name": "Faisal' Workshop",
+  "short_name": "Faisal Workshop",
+  "description": "Your personal space for daily routines, notes, files and images.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f8fa",
+  "theme_color": "#477b68",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
