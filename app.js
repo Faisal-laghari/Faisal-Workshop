@@ -3,8 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const CONFIG = {
   // Create a free project at https://supabase.com and paste its Project URL + anon/publishable key here.
   // Never put a Supabase service_role key in frontend code.
-  supabaseUrl: '',
-  supabaseAnonKey: ''
+  supabaseUrl: 'https://jpafppxtsljbibtvpqpm.supabase.co',
+  supabaseAnonKey: 'sb_publishable_DA6frCMN6ciUAusBJk4BkA_NnENBYG3'
 };
 const CLOUD_READY = /^https:\/\/.+/.test(CONFIG.supabaseUrl) && CONFIG.supabaseAnonKey.length > 20;
 const supabase = CLOUD_READY ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey) : null;
