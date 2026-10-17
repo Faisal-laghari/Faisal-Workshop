@@ -80,7 +80,25 @@ async function refreshAuth() {
   const {data:{session}}=await supabase.auth.getSession(); user=session?.user||null;
   if(user) {
     $('#accountButton').textContent='Sign out'; setStatus('Cloud sync',true);
-    try { await cloudLoad(); $('#fileNotice').textContent='Signed in. Files are stored in your private account space.'; }
+    const localTasksBeforeCloud = readLocal(LOCAL_TASKS, []);
+    try {
+      await cloudLoad();
+      // If this account has no cloud tasks yet, preserve and migrate tasks made before sign-in.
+      if (tasks.length === 0 && localTasksBeforeCloud.length > 0) {
+        tasks = localTasksBeforeCloud.map(t => ({
+          id: t.id || crypto.randomUUID(),
+          title: String(t.title || '').trim(),
+          time: t.time || '',
+          done: Boolean(t.done),
+          created_at: t.created_at || new Date().toISOString()
+        })).filter(t => t.title);
+        for (const task of tasks) await upsertTask(task);
+        saveLocalTasks();
+        renderTasks();
+        showToast('Your existing tasks were synced to your account.');
+      }
+      $('#fileNotice').textContent='Signed in. Files are stored in your private account space.';
+    }
     catch(e) { showToast('Could not load cloud data: '+e.message); }
   } else { $('#accountButton').textContent='Sign in / Sync'; setStatus('Signed out',false); tasks=readLocal(LOCAL_TASKS,[]); notes=readLocal(LOCAL_NOTES,[]); files=readLocal(LOCAL_FILES,[]); renderAll(); }
 }
