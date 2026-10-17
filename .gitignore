@@ -1,8 +1,15 @@
-﻿node_modules/
+# Local secrets and environment configuration
 .env
 .env.*
 !.env.example
+*.local
+
+# Dependencies and build output
+node_modules/
+dist/
 .vercel/
-*.log
-scripts/
-supabase/.temp/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
