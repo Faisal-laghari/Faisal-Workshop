@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       skipped++;
       continue;
     }
-    if (localNow.hour !== Number(item.reminder_hour ?? 19) || item.last_sent_date === localNow.date) {
+    if (localNow.hour < Number(item.reminder_hour ?? 19) || item.last_sent_date === localNow.date) {
       skipped++;
       continue;
     }
