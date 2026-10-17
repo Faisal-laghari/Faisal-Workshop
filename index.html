@@ -29,7 +29,7 @@
       <button class="tab active" data-tab="routine">Daily routine</button><button class="tab" data-tab="notes">Notes</button><button class="tab" data-tab="files">Files & images</button>
     </nav>
     <section id="routine" class="panel active">
-      <div class="section-heading"><div><h2>Today's routine</h2><p>One small step at a time.</p></div><button id="addTaskButton" class="button button-primary">＋ Add task</button></div>
+      <div class="section-heading"><div><h2>Today's routine</h2><p>One small step at a time.</p></div><div class="routine-actions"><button id="reminderButton" class="button button-light" type="button">Enable daily reminders</button><button id="addTaskButton" class="button button-primary">＋ Add task</button></div></div>
       <div class="progress-card"><div class="progress-label"><span>Daily progress</span><strong id="progressText">0% complete</strong></div><div class="progress-track"><div id="progressBar"></div></div></div>
       <form id="taskForm" class="inline-form hidden"><input id="taskTitle" maxlength="140" required placeholder="What do you want to get done?"><input id="taskTime" type="time" aria-label="Task time"><button class="button button-primary">Save task</button><button id="cancelTask" type="button" class="button button-light">Cancel</button></form>
       <div id="taskList" class="task-list"></div><div id="taskEmpty" class="empty-state"><span>✓</span><strong>Your day starts here</strong><p>Add your first task to make a plan.</p></div>
