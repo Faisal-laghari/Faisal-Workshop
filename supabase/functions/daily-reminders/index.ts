@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
           body: `It's ${timeLabel} — time to work on this task.`,
           url: "./",
           tag: `workshop-task-${task.id}`,
-          vibrate: [250, 120, 250, 120, 400],
+          vibrate: [300, 150, 300, 150, 300],
         };
         try {
           await webpush.sendNotification(item.subscription, JSON.stringify(payload), { TTL: 60 * 60 * 24 });
