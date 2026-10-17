@@ -107,8 +107,14 @@ async function enableDailyReminders(){
     const permission=Notification.permission==='default'?await Notification.requestPermission():Notification.permission;
     if(permission!=='granted'){showToast('Allow notifications in browser settings, then try again.');return;}
     const registration=await navigator.serviceWorker.ready;
+    const expectedKey=urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
     let subscription=await registration.pushManager.getSubscription();
-    if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+    if(subscription){
+      const currentKey=subscription.options.applicationServerKey;
+      const matches=currentKey&&new Uint8Array(currentKey).length===expectedKey.length&&new Uint8Array(currentKey).every((byte,index)=>byte===expectedKey[index]);
+      if(!matches){await subscription.unsubscribe();subscription=null;}
+    }
+    if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:expectedKey});
     const payload={endpoint:subscription.endpoint,user_id:user.id,subscription:subscription.toJSON(),timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Karachi',reminder_hour:19,updated_at:new Date().toISOString()};
     const {error}=await supabase.from('push_subscriptions').upsert(payload,{onConflict:'endpoint'});
     if(error)throw error;
