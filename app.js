@@ -96,7 +96,7 @@ async function removeCloudRow(table,id) { const {error}=await supabase.from(tabl
 const REMINDER_ENABLED='fw_daily_reminders_enabled';
 const REMINDER_LAST='fw_daily_reminder_last';
 const REMINDER_EMPTY_DAY='fw_daily_reminder_empty_day';
-const VAPID_PUBLIC_KEY='BFe5IFVPM22aIOLf2V-E0UFGS13VfZCI9o5_gefQXfKc0H3sOWmEm6Pro4MsTFsN-RWn5byUAUWo_RYkFv5G-iQ';
+const VAPID_PUBLIC_KEY='BIlwCaDiNl-jFp_Kr-jL3vWZUHOnd7eIR2uUtqGZuiquztfy4cmMawgY7D7zG8SUpu7BGc3WDiZS01Zguy_ib90';
 function localDateKey(date=new Date()){return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');}
 function tasksAddedToday(){const key=localDateKey();return tasks.some(t=>{const d=new Date(t.created_at||Date.now());return localDateKey(d)===key;});}
 function urlBase64ToUint8Array(value){const padding='='.repeat((4-value.length%4)%4);const base64=(value+padding).replace(/-/g,'+').replace(/_/g,'/');const raw=atob(base64);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}
