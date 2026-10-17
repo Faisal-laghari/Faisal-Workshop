@@ -81,7 +81,10 @@ Deno.serve(async (req) => {
       for (const task of dueTasks ?? []) {
         if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(task.time || "")) continue;
         try {
-          if (localDate(new Date(task.created_at), timezone) !== localNow.date) continue;
+          const taskDate = localDate(new Date(task.created_at), timezone);
+          const yesterday = localDate(new Date(now.getTime() - 24 * 60 * 60 * 1000), timezone);
+          // Include yesterday's tasks too, so a newly fixed reminder can recover a missed alert.
+          if (taskDate !== localNow.date && taskDate !== yesterday) continue;
         } catch { continue; }
         if (task.time > localNow.clock) continue;
 
