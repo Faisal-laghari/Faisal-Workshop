@@ -96,10 +96,29 @@ async function removeCloudRow(table,id) { const {error}=await supabase.from(tabl
 const REMINDER_ENABLED='fw_daily_reminders_enabled';
 const REMINDER_LAST='fw_daily_reminder_last';
 const REMINDER_EMPTY_DAY='fw_daily_reminder_empty_day';
+const VAPID_PUBLIC_KEY='BFe5IFVPM22aIOLf2V-E0UFGS13VfZCI9o5_gefQXfKc0H3sOWmEm6Pro4MsTFsN-RWn5byUAUWo_RYkFv5G-iQ';
 function localDateKey(date=new Date()){return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');}
 function tasksAddedToday(){const key=localDateKey();return tasks.some(t=>{const d=new Date(t.created_at||Date.now());return localDateKey(d)===key;});}
-async function enableDailyReminders(){if(!('Notification' in window)){showToast('Notifications are not supported by this browser.');return;}try{const permission=Notification.permission==='default'?await Notification.requestPermission():Notification.permission;if(permission!=='granted'){showToast('Allow notifications in your browser settings to enable reminders.');return;}localStorage.setItem(REMINDER_ENABLED,'1');$('#reminderButton').textContent='Daily reminders enabled';showToast('Daily reminders are enabled on this device.');checkDailyReminder(true);}catch(err){showToast('Could not enable reminders: '+err.message);}}
-function checkDailyReminder(force=false){if(localStorage.getItem(REMINDER_ENABLED)!=='1'||!('Notification' in window)||Notification.permission!=='granted')return;const now=Date.now(),todayKey=localDateKey(),emptyToday=!tasksAddedToday(),last=Number(localStorage.getItem(REMINDER_LAST)||0);if(emptyToday){if(localStorage.getItem(REMINDER_EMPTY_DAY)===todayKey&&!force)return;try{new Notification('A fresh start',{body:"You haven't added any tasks today. Add one small task to get started.",icon:'./icon-192.png',tag:'workshop-daily-reminder'});localStorage.setItem(REMINDER_EMPTY_DAY,todayKey);localStorage.setItem(REMINDER_LAST,String(now));}catch(e){console.warn('Notification unavailable',e);}return;}if(force||!last||now-last>=24*60*60*1000){try{new Notification('Your daily task reminder',{body:'Take a moment to review your tasks and plan your next step.',icon:'./icon-192.png',tag:'workshop-daily-reminder'});localStorage.setItem(REMINDER_LAST,String(now));}catch(e){console.warn('Notification unavailable',e);}}}
+function urlBase64ToUint8Array(value){const padding='='.repeat((4-value.length%4)%4);const base64=(value+padding).replace(/-/g,'+').replace(/_/g,'/');const raw=atob(base64);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}
+async function enableDailyReminders(){
+  if(!supabase||!user){showToast('Sign in to your Workshop account before enabling background reminders.');openAuth();return;}
+  if(!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window)){showToast('Background push is not supported in this browser. Try installing Workshop and opening it in Chrome.');return;}
+  try{
+    const permission=Notification.permission==='default'?await Notification.requestPermission():Notification.permission;
+    if(permission!=='granted'){showToast('Allow notifications in browser settings, then try again.');return;}
+    const registration=await navigator.serviceWorker.ready;
+    let subscription=await registration.pushManager.getSubscription();
+    if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+    const payload={endpoint:subscription.endpoint,user_id:user.id,subscription:subscription.toJSON(),timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Karachi',reminder_hour:19,updated_at:new Date().toISOString()};
+    const {error}=await supabase.from('push_subscriptions').upsert(payload,{onConflict:'endpoint'});
+    if(error)throw error;
+    localStorage.setItem(REMINDER_ENABLED,'1');
+    $('#reminderButton').textContent='Daily push reminders enabled';
+    showToast('Background reminders enabled. Daily check is scheduled for 7 PM local time.');
+    await registration.showNotification('Background reminders enabled',{body:'Workshop will send a daily reminder around 7 PM when push is available.',icon:'./icon-192.png',tag:'workshop-push-enabled'});
+  }catch(err){console.error('Push subscription setup failed',err);showToast('Could not enable background reminders: '+(err.message||'Please try again.'));}
+}
+function checkDailyReminder(force=false){if(localStorage.getItem(REMINDER_ENABLED)!=='1'||!('Notification'in window)||Notification.permission!=='granted'||user)return;const now=Date.now(),todayKey=localDateKey(),emptyToday=!tasksAddedToday(),last=Number(localStorage.getItem(REMINDER_LAST)||0);if(emptyToday){if(localStorage.getItem(REMINDER_EMPTY_DAY)===todayKey&&!force)return;try{new Notification('A fresh start',{body:"You haven't added any tasks today. Add one small task to get started.",icon:'./icon-192.png',tag:'workshop-daily-reminder'});localStorage.setItem(REMINDER_EMPTY_DAY,todayKey);localStorage.setItem(REMINDER_LAST,String(now));}catch(e){console.warn('Notification unavailable',e);}return;}if(force||!last||now-last>=24*60*60*1000){try{new Notification('Your daily task reminder',{body:'Take a moment to review your tasks and plan your next step.',icon:'./icon-192.png',tag:'workshop-daily-reminder'});localStorage.setItem(REMINDER_LAST,String(now));}catch(e){console.warn('Notification unavailable',e);}}}
 function startReminderChecks(){checkDailyReminder();setInterval(()=>checkDailyReminder(),15*60*1000);}
 function openAuth() {
   if(!CLOUD_READY || !supabase) { showToast('Cloud sync is unavailable right now. Your data can still be saved in this browser.'); return; }
