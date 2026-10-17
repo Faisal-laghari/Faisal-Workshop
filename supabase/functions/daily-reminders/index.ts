@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     return Response.json({ error: "Missing server configuration" }, { status: 500, headers: corsHeaders });
   }
 
-  webpush.setVapidDetails("mailto:workshop-reminders@example.com", vapidPublicKey, vapidPrivateKey);
+  webpush.setVapidDetails("https://faisal-laghari.github.io/Faisal-Workshop/", vapidPublicKey, vapidPrivateKey);
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const now = new Date();
   const since = new Date(now.getTime() - 36 * 60 * 60 * 1000).toISOString();
